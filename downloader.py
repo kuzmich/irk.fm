@@ -1,44 +1,76 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-import sys, logging, simplejson as json
+import sys
 from subprocess import *
+import logging
+import simplejson as json
 
-def start(url):
-  cmd = ["/usr/bin/wget", url, "-c", "--limit-rate=1k", "--timeout=3", "-P", sys.path[0]]
-  try:
-    p = Popen(cmd, stdout=PIPE, stderr=PIPE, stdin=PIPE)
-    o = p.communicate()
-    call_controller(o[0] + o[1] , p.returncode)
-  except OSError, e:
-    call_controller("Execution failed: %s" % e, 999)
+
+def start(settings):
+    cmd = [
+        "/usr/bin/wget", 
+        settings['url'], 
+        "-c", 
+        "--limit-rate=%s" % settings['speed-limit'], 
+        "--timeout=%d" % settings['timeout'], 
+        "-P%s" % sys.path[0]
+    ]
+    try:
+        p = Popen(cmd, stdout=PIPE, stderr=PIPE, stdin=PIPE)
+        o = p.communicate()
+        _call_controller(o[0] + o[1] , p.returncode)
+    except OSError, e:
+        _call_controller("Execution failed: %s" % e, 999)
 
 def stop():
-  # надо еще уметь останавливать закачку
-  print ""
+    # надо еще уметь останавливать закачку
+    print ""
 
-def call_controller(output, code):
-  logging.debug("Сообщение: %s" % output)
-  logging.debug("Код возврата: %d" % code)
+
+def _check_settings(settings):
+    required_keys = ("id", "url")
+    default_settings = {'speed-limit': '1k', 'retries': 10, 'timeout': 60}
+    retrieval_settings = default_settings
+    retrieval_settings.update(settings)
+    checked = False
+
+    for key in required_keys:
+        if key not in retrieval_settings.keys():
+            break
+        checked = True
+
+    return (checked, retrieval_settings)
+
+
+def _call_controller(output, code):
+    logging.debug("Сообщение: %s" % output)
+    logging.debug("Код возврата: %d" % code)
 
 # ====================================================                             ======================================================== #
 
 # Сначала надо разобрать переданные параметры и получить как минимум url закачки
 # Сохранять закачку в случайную директорию (например hash от текущего времени)
-
 # Отправим привет серверу
-#  print json.dumps({'result' : 'OK', 'url':data['url']})
+
 print json.dumps({'result' : 'OK'})
 sys.stdout.flush()
 
-data = sys.stdin.read()
-settings = json.loads(data)
-
 logging.basicConfig(filename=sys.path[0]+'/downloader.log', level=logging.DEBUG, format="%(asctime)s - %(message)s")
 logging.debug('Downloader is started')
+
+data = sys.stdin.read()
 logging.debug('Data: %s' % data)
 
+try:
+    settings = json.loads(data)
+except ValueError, e:
+    _call_controller("Кривой конфиг: %s" % e, 555)
+    sys.exit(555)
 
-if 'url' in settings:
-  start(settings['url'])
+(checked, settings) = _check_settings(settings)
+if checked:
+    start(settings)
+else:
+    _call_controller("Не хватает параметров", 444)
 
 logging.debug('Downloader is stopped')
