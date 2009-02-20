@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-import sys
+import sys, time
 from subprocess import *
 import logging
 import simplejson as json
@@ -47,20 +47,22 @@ def _call_controller(output, code):
     logging.debug("Код возврата: %d" % code)
 
 # ====================================================                             ======================================================== #
-
-# Сначала надо разобрать переданные параметры и получить как минимум url закачки
 # Сохранять закачку в случайную директорию (например hash от текущего времени)
-# Отправим привет серверу
+#time.sleep(7)
 
-print json.dumps({'result' : 'OK'})
+# Отправим привет серверу
+print json.dumps({'result' : 'started'})
 sys.stdout.flush()
 
 logging.basicConfig(filename=sys.path[0]+'/downloader.log', level=logging.DEBUG, format="%(asctime)s - %(message)s")
 logging.debug('Downloader is started')
 
+# считаем переданные контроллером настройки и данные
 data = sys.stdin.read()
 logging.debug('Data: %s' % data)
 
+
+# Теперь надо разобрать и проверить переданные параметры и получить как минимум url закачки
 try:
     settings = json.loads(data)
 except ValueError, e:
@@ -72,5 +74,6 @@ if checked:
     start(settings)
 else:
     _call_controller("Не хватает параметров", 444)
+
 
 logging.debug('Downloader is stopped')

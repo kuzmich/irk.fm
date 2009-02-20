@@ -13,22 +13,30 @@ ips = (('192.168.1.11', 33333),)
 # загрузим общие настройки, добавим персональные для данной закачки 
 # отправим их downloader.py и получим ответ от сервера
 
-#try:
-with open(sys.path[0] + '/downloader.conf') as f:
-    settings = json.load(f)
-#except ValueError as e:
-#    print "Кривой конфиг"
-#f.closed
+try:
+    f = open(sys.path[0] + '/downloader.conf')
+    try:
+        settings = json.load(f)
+    except ValueError, e:
+        print "Кривой конфиг"
+        sys.exit(333)
+    finally:
+        f.close()
+except IOError, e:
+    print "Ну и где конфиг?"
+    sys.exit(444)
+
 
 settings['url'] = urls[1]
 settings['id'] = 1233
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.settimeout(10.0)
 try:
     s.connect((ips[0][0], ips[0][1]))
     s.send(json.dumps(settings))
     response = s.recv(1024)
-except socket.error as e:
+except socket.error, e:
     print "Socket error: ", e
 else:
     s.close()
