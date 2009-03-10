@@ -57,24 +57,12 @@ def send_response(response):
 
 def start_downloader(data):
     try:
-        #pdb.set_trace()
-        #p = Popen('downloader.py', stdin=PIPE, stdout=PIPE) 
         p = Popen('downloader.py', stdin=PIPE) 
         p.stdin.write(data)
-        #o = p.communicate(data)
-        retcode = p.returncode
-        #data = json.dumps(o[0])
-        #conn.send(data)
-        if retcode < 0:
-            #"Child was terminated by signal"
-            send_response(answers['WGET_FAILED'])
-        else:
-            send_response(answers['OK'])
-            pass
-            #print >>sys.stderr, "Child returned", retcode
     except OSError, e:
         send_response(answers['WGET_FAILED'])
-        #print >>sys.stderr, "Execution failed:", e
+    else:
+        send_response(answers['OK'])
 
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -93,7 +81,6 @@ while 1:
             if check_request(request) :
                 #if request['action'] == 'start'
                 if check_downloaders():
-                    #send_response(answers['OK'])
                     start_downloader(data)
                 else:
                     send_response(answers['TOO_MANY'])

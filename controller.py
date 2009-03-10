@@ -1,14 +1,10 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 import sys, socket, simplejson as json
+import time
 
 config = sys.path[0] + '/downloader.conf'
 locations = (('192.168.1.11', 33333),)
-urls = (
-    'http://www.stephenzunes.org/vitae08.doc', 
-    "http://docs.python.org/ftp/python/doc/current/python-2.6.1-docs-pdf-a4.tar.bz2",
-    'http://dfn.dl.sourceforge.net/sourceforge/psi/psi-0.12-win-setup-1.exe'
-)
 
 def create_download(info):
     """Сохраняет информацию о новой закачке в базу и стартует ее
@@ -24,7 +20,7 @@ def create_download(info):
 
 def _start_download(info, settings, location):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.settimeout(10.0)
+    s.settimeout(3.0)
     try:
         s.connect(location)
         s.send(json.dumps({'action': 'start', 'info':info, 'settings':settings}))
