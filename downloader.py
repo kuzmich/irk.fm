@@ -14,6 +14,7 @@ def start(data):
         "-c", 
         "--limit-rate=%s" % data['settings']['speed-limit'], 
         "--timeout=%d" % data['settings']['timeout'], 
+        "--tries=%d" % data['settings']['retries'], 
         "-P%s/downloads" % sys.path[0]
     ]
     try:
@@ -37,7 +38,6 @@ def stop():
 
 def _load_data():
     settings = {} 
-
     data = sys.stdin.read()
     try:
         settings = json.loads(data)
@@ -79,8 +79,8 @@ def _check_data(data):
     return checked
 
 def log(output, code):
-    logging.debug("Сообщение: %s" % output)
-    logging.debug("Код возврата: %d" % code)
+    l.debug("Сообщение: %s" % output)
+    l.debug("Код возврата: %d" % code)
 
 def create_daemon():
     # do the UNIX double-fork magic, see Stevens' "Advanced Programming in the UNIX Environment" for details (ISBN 0201563177)
@@ -90,7 +90,7 @@ def create_daemon():
             # exit first parent 
             sys.exit(0)
     except OSError, e:
-        print >>sys.stderr, "fork #1 failed: %d (%s)" % (e.errno, e.strerror)
+        l.debug("fork #1 failed: %d (%s)" % (e.errno, e.strerror))
         sys.exit(1)
 
     # it separates the son from the father
@@ -104,10 +104,10 @@ def create_daemon():
         pid = os.fork()
         if pid > 0:
             # exit from second parent, print eventual PID before
-            print 'Daemon PID %d' % pid
+            l.debug('Daemon PID %d' % pid)
             sys.exit(0)
     except OSError, e:
-        print >>sys.stderr, "fork #2 failed: %d (%s)" % (e.errno, e.strerror)
+        l.debug("fork #2 failed: %d (%s)" % (e.errno, e.strerror))
         sys.exit(1)
 
 
@@ -115,18 +115,15 @@ def create_daemon():
 #time.sleep(7)
 
 logging.basicConfig(filename=sys.path[0]+'/downloader.log', level=logging.DEBUG, format="%(asctime)s - %(message)s")
-logging.debug('Downloader is started')
+l = logging.getLogger('leika.downloader')
+l.debug('Downloader is started')
 
 if __name__ == '__main__':
     create_daemon()
-    logging.debug('Daemonized!')
+    l.debug('Daemonized!')
 
 data = _load_data()
-logging.debug('Data: %s' % data)
-
-# Отправим привет серверу
-print json.dumps({'result' : 'starting'})
-#sys.stdout.flush()
+l.debug('Data: %s' % data)
 
 if data['action'] == 'start':
     if _check_data(data):
@@ -134,4 +131,4 @@ if data['action'] == 'start':
     else:
         log("Не хватает параметров", 444)
 
-logging.debug('Downloader is stopped')
+l.debug('Downloader is stopped')

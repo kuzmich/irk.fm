@@ -59,6 +59,7 @@ def start_downloader(data):
     try:
         p = Popen('downloader.py', stdin=PIPE) 
         p.stdin.write(data)
+        p.stdin.close()
     except OSError, e:
         send_response(answers['WGET_FAILED'])
     else:
@@ -68,26 +69,27 @@ def start_downloader(data):
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.bind(addr)
 s.listen(1)
-# while 1:
-conn, addr = s.accept()
 
 while 1:
-    data = conn.recv(1024)
-    if not data: 
-        break
-    else:
-        try:
-            request = json.loads(data)
-            if check_request(request) :
-                #if request['action'] == 'start'
-                if check_downloaders():
-                    start_downloader(data)
+    conn, addr = s.accept()
+
+    while 1:
+        data = conn.recv(1024)
+        if not data: 
+            break
+        else:
+            try:
+                request = json.loads(data)
+                if check_request(request) :
+                    #if request['action'] == 'start'
+                    if check_downloaders():
+                        start_downloader(data)
+                    else:
+                        send_response(answers['TOO_MANY'])
                 else:
-                    send_response(answers['TOO_MANY'])
-            else:
-                send_response(answers['BAD_REQUEST'])
-        except ValueError, e:
-            send_response(answers['BAD_DATA'])
+                    send_response(answers['BAD_REQUEST'])
+            except ValueError, e:
+                send_response(answers['BAD_DATA'])
 
-conn.close()
-
+    conn.close()
+    #break
