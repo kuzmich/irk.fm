@@ -6,12 +6,14 @@ import pdb
 
 addr = ('', 33333)
 answers = {
-    'OK': (0, 'OK'), 
-    'BAD_DATA': (1, 'BAD_DATA'), 
-    'BAD_REQUEST': (2, 'BAD_REQUEST'), 
+    'OK': (0, 'OK'),
+    'BAD_DATA': (1, 'BAD_DATA'),
+    'BAD_REQUEST': (2, 'BAD_REQUEST'),
     'TOO_MANY': (3, 'TOO_MANY'),
     'WGET_FAILED': (4, 'WGET_FAILED'),
-} 
+}
+
+# ==================================================================   Функции   ==================================================================== #
 
 def check_request(data):
     """Проверяет переданные от контроллера данные на корректность
@@ -65,6 +67,7 @@ def start_downloader(data):
     else:
         send_response(answers['OK'])
 
+# ======================================================================   Тело   =================================================================== #
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.bind(addr)
@@ -81,7 +84,6 @@ while 1:
             try:
                 request = json.loads(data)
                 if check_request(request) :
-                    #if request['action'] == 'start'
                     if check_downloaders():
                         start_downloader(data)
                     else:

@@ -1,9 +1,11 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-import sys, socket, simplejson as json
+import sys
+import socket
+import simplejson as json
 import time
 
-config = sys.path[0] + '/downloader.conf'
+config = sys.path[0] + '/downloader-config.json'
 locations = (('192.168.1.11', 33333),)
 
 def create_download(info):
@@ -15,10 +17,11 @@ def create_download(info):
     }
     """
     info['id'] = _store_download(info) 
-    settings = _load_settings()
+    settings = _load_settings(config)
     _start_download(info, settings, locations[0])
 
 def _start_download(info, settings, location):
+    """Соединяется по сокету с download-server.py и передает ему полученные от клиента данные вместе с настройками даунлоадера"""
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.settimeout(3.0)
     try:
@@ -31,7 +34,8 @@ def _start_download(info, settings, location):
         s.close()
         print response 
 
-def _load_settings():
+def _load_settings(config):
+    """Загружает настройки даунлоадера из файла config"""
     settings = {}
     try:
         f = open(config)
@@ -54,7 +58,7 @@ def on_finish(id, result):
 def _store_download(info):
     return 3333
 
-def _update_download(info):
+def _update_download(id, status):
     pass
 
 

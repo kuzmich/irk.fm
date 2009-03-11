@@ -1,11 +1,17 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-import sys, time, os
+import sys
+import time
+import os
+import socket
 from subprocess import *
 import logging
 import simplejson as json
 #from __future__ import with_statement # This isn't required in Python 2.6
 
+location = ('192.168.1.11', 33334)
+
+# ==================================================================   Функции   ==================================================================== #
 
 def start(data):
     cmd = [
@@ -21,13 +27,15 @@ def start(data):
         olog = open('%s/logs/%d-output.log' % (sys.path[0], data['info']['id']), 'w')
         elog = open('%s/logs/%d-error.log'  % (sys.path[0], data['info']['id']), 'w')
     except IOError as e:
-        log("Execution failed: %s" % e, 888)
+        send_status('CANT_OPEN_LOG_FILES', e)
     else:
         try:
             p = Popen(cmd, stdout=olog, stderr=elog)
             o = p.communicate()
         except OSError, e:
-            log("Execution failed: %s" % e, 999)
+            send_status('WGET_FAILED', e)
+        else:
+            send_status("FINISHED")
         finally:
             olog.close()
             elog.close()
@@ -36,51 +44,30 @@ def stop():
     # надо еще уметь останавливать закачку
     pass
 
-def _load_data():
+def load_data():
     settings = {} 
     data = sys.stdin.read()
     try:
         settings = json.loads(data)
     except ValueError, e:
-        log("Кривые данные: %s" % e, 555)
+        send_status('BAD_DATA', e)
         sys.exit(555)
 
     return settings
 
-def _check_data(data):
-    """Проверяет переданные от контроллера данные на корректность
-
-    data = {
-        'action' : [start|stop]
-        'info' : {'url' : string, 'id': integer, ...},
-        'settings' : {'speed-limit': '1k', 'retries': 10, 'timeout': 60, ...}
-    }
-    """
-    required_info = ("id", "url")
-    #required_settings = {'speed-limit': '1k', 'retries': 10, 'timeout': 60}
-    required_settings = ('speed-limit', 'retries', 'timeout')
-    checked = False
-
-    #settings = required_settings
-    #settings.update(data['settings'])
-    #data['settings'] = settings
-
-    for key in required_info:
-        if key not in data['info'].keys():
-            break
-        checked = True
-
-    for key in required_settings:
-        if key not in data['settings'].keys():
-            break
-        checked = checked and True 
-
-    #return (checked, data)
-    return checked
-
-def log(output, code):
-    l.debug("Сообщение: %s" % output)
-    l.debug("Код возврата: %d" % code)
+def send_status(status, data):
+    """Посылает данные о статусе закачки контроллеру"""
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.settimeout(3.0)
+    try:
+        s.connect(location)
+        s.send(json.dumps({'status': status, 'data': data}))
+    except socket.error, e:
+        l.debug("Socket error: %s" % e)
+    #except ValueError, e:
+        #l.debug("Socket error: %s" % e)
+    else:
+        s.close()
 
 def create_daemon():
     # do the UNIX double-fork magic, see Stevens' "Advanced Programming in the UNIX Environment" for details (ISBN 0201563177)
@@ -90,7 +77,8 @@ def create_daemon():
             # exit first parent 
             sys.exit(0)
     except OSError, e:
-        l.debug("fork #1 failed: %d (%s)" % (e.errno, e.strerror))
+        #l.debug("fork #1 failed: %d (%s)" % (e.errno, e.strerror))
+        send_status('FORK_1_FAILED', e)
         sys.exit(1)
 
     # it separates the son from the father
@@ -104,31 +92,30 @@ def create_daemon():
         pid = os.fork()
         if pid > 0:
             # exit from second parent, print eventual PID before
-            l.debug('Daemon PID %d' % pid)
+            #l.debug('Downloader PID %d' % pid)
+            send_status('PID', pid)
             sys.exit(0)
     except OSError, e:
-        l.debug("fork #2 failed: %d (%s)" % (e.errno, e.strerror))
+        #l.debug("fork #2 failed: %d (%s)" % (e.errno, e.strerror))
+        send_status('FORK_2_FAILED', e)
         sys.exit(1)
 
+# ======================================================================   Тело   =================================================================== #
 
-# ====================================================                             ======================================================== #
 #time.sleep(7)
 
-logging.basicConfig(filename=sys.path[0]+'/downloader.log', level=logging.DEBUG, format="%(asctime)s - %(message)s")
-l = logging.getLogger('leika.downloader')
+logging.basicConfig(filename=sys.path[0]+'/downloader.log', level=logging.DEBUG, format="%(asctime)s - %(name)s - %(message)s")
+l = logging.getLogger('downloader')
 l.debug('Downloader is started')
 
 if __name__ == '__main__':
     create_daemon()
     l.debug('Daemonized!')
 
-data = _load_data()
+data = load_data()
 l.debug('Data: %s' % data)
 
 if data['action'] == 'start':
-    if _check_data(data):
-        start(data)
-    else:
-        log("Не хватает параметров", 444)
+    start(data)
 
 l.debug('Downloader is stopped')
