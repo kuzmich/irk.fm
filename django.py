@@ -10,5 +10,5 @@ urls = (
 
 c.create_download({
     'url': urls[1], 
-    'description': 'Документация по пайтону'
+    '_description': 'Документация по пайтону'
 })

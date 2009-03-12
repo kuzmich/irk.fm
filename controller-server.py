@@ -4,7 +4,7 @@ import sys
 import socket 
 import simplejson as json
 import logging
-import controller 
+import controller as c 
 
 addr = ('', 33334)
 
@@ -23,5 +23,6 @@ while 1:
         if not data: 
             break
         else:
-            l.debug('Data: %s' % data)
+            c.update_status(data)
+
     conn.close()

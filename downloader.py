@@ -9,11 +9,12 @@ import logging
 import simplejson as json
 #from __future__ import with_statement # This isn't required in Python 2.6
 
-location = ('192.168.1.11', 33334)
+controller_server = ('192.168.1.11', 33334)
 
 # ==================================================================   Функции   ==================================================================== #
 
 def start(data):
+    """Запускает wget"""
     cmd = [
         "/usr/bin/wget", 
         data['info']['url'], 
@@ -45,6 +46,7 @@ def stop():
     pass
 
 def load_data():
+    """Считывает данные для даунлоадера из stdin и преобразует их из json-формата"""
     settings = {} 
     data = sys.stdin.read()
     try:
@@ -55,21 +57,22 @@ def load_data():
 
     return settings
 
-def send_status(status, data):
-    """Посылает данные о статусе закачки контроллеру"""
+def send_status(status, data = None):
+    """Посылает данные о статусе закачки серверу контроллера"""
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.settimeout(3.0)
     try:
-        s.connect(location)
+        s.connect(controller_server)
         s.send(json.dumps({'status': status, 'data': data}))
     except socket.error, e:
-        l.debug("Socket error: %s" % e)
+        l.debug("Не могу послать статус - ошибка сокета: %s" % e)
     #except ValueError, e:
         #l.debug("Socket error: %s" % e)
     else:
         s.close()
 
 def create_daemon():
+    """Делает двойной форк"""
     # do the UNIX double-fork magic, see Stevens' "Advanced Programming in the UNIX Environment" for details (ISBN 0201563177)
     # create - fork 1
     try:
