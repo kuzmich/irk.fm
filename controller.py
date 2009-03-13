@@ -30,7 +30,7 @@ def _start_download(info, settings, location):
         s.send(json.dumps({'action': 'start', 'info':info, 'settings':settings}))
         response = s.recv(1024)
     except socket.error, e:
-        _update_status("SOCKET_ERROR", e)
+        _update_status("C_SOCKET_ERROR", e)
     else:
         s.close()
         update_status(response)
@@ -43,12 +43,12 @@ def _load_settings(config):
         try:
             settings = json.load(f)
         except ValueError, e:
-            _update_status("BAD_CONFIG", e)
+            _update_status("C_BAD_CONFIG", e)
             sys.exit(333)
         finally:
             f.close()
     except IOError, e:
-        _update_status("CANT_OPEN_CONFIG", e)
+        _update_status("C_CANT_OPEN_CONFIG", e)
         sys.exit(444)
     else:
         return settings
@@ -74,7 +74,7 @@ def update_status(data):
         else:
             l.error("Пришел странный статус")
     except ValueError, e:
-        l.error("Пришел кривой статус: %s", e)
+        l.error("Пришел кривой статус: %s; Данные: %s" % (e, data))
 
 
 logging.basicConfig(filename=sys.path[0]+'/downloader.log', level=logging.DEBUG, format="%(asctime)s - %(name)s - %(message)s")

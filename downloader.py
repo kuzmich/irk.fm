@@ -7,6 +7,7 @@ import socket
 from subprocess import *
 import logging
 import simplejson as json
+import re
 #from __future__ import with_statement # This isn't required in Python 2.6
 
 controller_server = ('192.168.1.11', 33334)
@@ -25,18 +26,28 @@ def start(data):
         "-P%s/downloads" % sys.path[0]
     ]
     try:
-        olog = open('%s/logs/%d-output.log' % (sys.path[0], data['info']['id']), 'w')
-        elog = open('%s/logs/%d-error.log'  % (sys.path[0], data['info']['id']), 'w')
-    except IOError as e:
-        send_status('CANT_OPEN_LOG_FILES', e)
+        olog = open('%s/logs/%d-output.log' % (sys.path[0], data['info']['id']), 'w+')
+        elog = open('%s/logs/%d-error.log'  % (sys.path[0], data['info']['id']), 'w+')
+    except IOError, e:
+        send_status('D_CANT_OPEN_LOG_FILES', e[1])
     else:
         try:
             p = Popen(cmd, stdout=olog, stderr=elog)
             o = p.communicate()
         except OSError, e:
-            send_status('WGET_FAILED', e)
+            send_status('D_WGET_FAILED', e)
         else:
-            send_status("FINISHED")
+            if p.returncode == 0:
+                elog.seek(0)
+                log = elog.read()
+                d = re.search(r"^[0-9\-: ]{19} \((.+)\) - `(.+)'.+\[(\d+).*\]$", log, re.M)
+                t = re.search(r"^\D+:.+\[(\D+/\D+)\]$", log, re.M)
+                if d != None:
+                    send_status("D_FINISHED", (d.groups(), t.group(1)))
+                else:
+                    send_status("D_FINISHED", (p.returncode, 'search pattern not found'))
+            else:
+                send_status("D_FINISHED", p.returncode)
         finally:
             olog.close()
             elog.close()
@@ -52,7 +63,7 @@ def load_data():
     try:
         settings = json.loads(data)
     except ValueError, e:
-        send_status('BAD_DATA', e)
+        send_status('D_BAD_DATA', e)
         sys.exit(555)
 
     return settings
@@ -81,7 +92,7 @@ def create_daemon():
             sys.exit(0)
     except OSError, e:
         #l.debug("fork #1 failed: %d (%s)" % (e.errno, e.strerror))
-        send_status('FORK_1_FAILED', e)
+        send_status('D_FORK_1_FAILED', e)
         sys.exit(1)
 
     # it separates the son from the father
@@ -96,11 +107,11 @@ def create_daemon():
         if pid > 0:
             # exit from second parent, print eventual PID before
             #l.debug('Downloader PID %d' % pid)
-            send_status('PID', pid)
+            send_status('D_PID', pid)
             sys.exit(0)
     except OSError, e:
         #l.debug("fork #2 failed: %d (%s)" % (e.errno, e.strerror))
-        send_status('FORK_2_FAILED', e)
+        send_status('D_FORK_2_FAILED', e)
         sys.exit(1)
 
 # ======================================================================   Тело   =================================================================== #

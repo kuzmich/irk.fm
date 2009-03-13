@@ -39,7 +39,7 @@ def check_request(data):
     return checked
 
 def check_downloaders():
-    return False 
+    return True 
 
 def send_status(status, data = None):
     try:
@@ -56,9 +56,9 @@ def start_downloader(data):
         p.stdin.write(data)
         p.stdin.close()
     except OSError, e:
-        send_status('DOWNLOADER_FAILED', e)
+        send_status('DS_DOWNLOADER_FAILED', e)
     else:
-        send_status('DOWNLOADER_STARTED')
+        send_status('DS_DOWNLOADER_STARTED')
 
 # ======================================================================   Тело   =================================================================== #
 
@@ -83,11 +83,11 @@ while 1:
                     if check_downloaders():
                         start_downloader(data)
                     else:
-                        send_status('TOO_MANY')
+                        send_status('DS_TOO_MANY')
                 else:
-                    send_status('BAD_REQUEST')
+                    send_status('DS_BAD_REQUEST', request)
             except ValueError, e:
-                send_status('BAD_DATA', e)
+                send_status('DS_BAD_DATA', e)
 
     conn.close()
     #break

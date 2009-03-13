@@ -2,5 +2,5 @@
   "description" : "Этот файл в формате JSON (http://ru.wikipedia.org/wiki/JSON)",
   "timeout" : 3, "comment" : "таймаут поиска dns, подключения к серверу или получения данных",
   "retries" : 1, "comment" : "кол-во попыток закачки",
-  "speed-limit" : "1k", "comment" : "ограничение на скороть скачивания"
+  "speed-limit" : "15k", "comment" : "ограничение на скороть скачивания"
 }
